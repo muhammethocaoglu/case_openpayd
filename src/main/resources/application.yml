@@ -1,0 +1,4 @@
+fxrateservice:
+  baseUrl: http://data.fixer.io/api/
+  latestRatesPath: latest
+  apiKey: 497e889fd0670491aa4d23c03eb9e899
