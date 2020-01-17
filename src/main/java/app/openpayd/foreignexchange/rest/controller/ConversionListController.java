@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/conversions")
@@ -18,7 +20,7 @@ public class ConversionListController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ListCurrencyConversionsResponse list(CurrencyConversionListRequest currencyConversionListRequest) {
+    public ListCurrencyConversionsResponse list(@Valid CurrencyConversionListRequest currencyConversionListRequest) {
         SearchCurrencyConversionResult searchCurrencyConversionResult = currencyConversionSearchService
                 .search(currencyConversionListRequest.toModel());
         return ListCurrencyConversionsResponse.of(searchCurrencyConversionResult);
