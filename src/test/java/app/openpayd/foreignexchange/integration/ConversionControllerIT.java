@@ -1,5 +1,6 @@
 package app.openpayd.foreignexchange.integration;
 
+import app.openpayd.foreignexchange.rest.ErrorResponse;
 import app.openpayd.foreignexchange.rest.controller.dto.ConvertCurrenciesRequest;
 import app.openpayd.foreignexchange.rest.controller.dto.ConvertCurrenciesResponse;
 import app.openpayd.foreignexchange.rest.controller.dto.RetrieveExchangeRateResponse;
@@ -39,5 +40,29 @@ public class ConversionControllerIT extends AbstractIT {
                 .hasFieldOrProperty("transactionId")
                 .hasFieldOrProperty("amountInTargetCurrency")
                 .hasNoNullFieldsOrProperties();
+    }
+
+    @Test
+    void should_return_error_when_convert_currencies_if_request_parameter_is_missing() {
+
+        //given
+        String url = "http://localhost:" + serverPort + "/api/v1/conversions";
+        ConvertCurrenciesRequest convertCurrenciesRequest = ConvertCurrenciesRequest.builder()
+                .targetCurrency("USD")
+                .build();
+
+        //when
+        ResponseEntity<ErrorResponse> responseEntity = testRestTemplate.postForEntity(url,
+                convertCurrenciesRequest, ErrorResponse.class);
+
+        //then
+        assertThat(responseEntity).isNotNull();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseEntity.getBody()).isNotNull();
+        ErrorResponse errorResponse = responseEntity.getBody();
+        assertThat(errorResponse)
+                .isNotNull()
+                .hasFieldOrPropertyWithValue("errorCode", "1005")
+                .hasFieldOrPropertyWithValue("errorDescription", "Request parameter argument type is invalid");
     }
 }

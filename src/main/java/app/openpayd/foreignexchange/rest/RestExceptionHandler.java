@@ -6,6 +6,8 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,35 +38,41 @@ public class RestExceptionHandler {
     @ExceptionHandler(BindException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleRequestPropertyBindingError(BindException bindException, Locale locale) {
-        List<String> requiredFieldErrorMessages = retrieveLocalizationMessage("foreignexchange.api.request.parameter.binding.error", locale);
-        String code = requiredFieldErrorMessages.get(0);
+        log.error("Request property binding error occurred", bindException);
+        return createErrorResponseFromMessageSource("foreignexchange.api.request.parameter.binding.error", locale);
+    }
 
-        String errorMessage = bindException.getBindingResult()
-                .getFieldErrors().stream()
-                .map(FieldError::getField)
-                .map(error -> retrieveLocalizationMessage("foreignexchange.api.request.parameter.binding.error", locale, error))
-                .map(errorMessageList -> errorMessageList.get(1))
-                .collect(Collectors.joining(" && "));
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException methodArgumentNotValidException,
+                                                           Locale locale) {
+        log.error("Method argument not valid exception occurred", methodArgumentNotValidException);
+        return createErrorResponseFromMessageSource("foreignexchange.api.request.method.argument.not.valid", locale);
+    }
 
-        log.error("Exception occurred while request validation: {}", errorMessage);
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleMissingServletRequestParameterException(MissingServletRequestParameterException missingServletRequestParameterException,
+                                                           Locale locale) {
+        log.error("Missing servlet request parameter exception occurred", missingServletRequestParameterException);
 
-        return new ErrorResponse(code, errorMessage);
+        return createErrorResponseFromMessageSource("foreignexchange.api.missing.servlet.request.parameter", locale);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException methodArgumentTypeMismatchException,
+                                                                   Locale locale) {
+        log.error("MethodArgumentTypeMismatchException occurred", methodArgumentTypeMismatchException);
+        return createErrorResponseFromMessageSource("foreignexchange.api.request.parameter.type.mismatch", locale,
+                methodArgumentTypeMismatchException.getName());
     }
 
     @ExceptionHandler(ForeignExchangeBusinessException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     public ErrorResponse handleBonusApiBusinessException(ForeignExchangeBusinessException foreignExchangeBusinessException, Locale locale) {
-        log.warn("Business exception occurred", foreignExchangeBusinessException);
+        log.error("Business exception occurred", foreignExchangeBusinessException);
         return createErrorResponseFromMessageSource(foreignExchangeBusinessException.getKey(), locale);
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ErrorResponse handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException methodArgumentTypeMismatchException,
-                                                                   Locale locale) {
-        log.trace("MethodArgumentTypeMismatchException occurred", methodArgumentTypeMismatchException);
-        return createErrorResponseFromMessageSource("foreignexchange.api.request.parameter.type.mismatch", locale,
-                methodArgumentTypeMismatchException.getName());
     }
 
     private ErrorResponse createErrorResponseFromMessageSource(String key, Locale locale, String... args) {
